@@ -77,7 +77,6 @@ const styles = StyleSheet.create({
     deleteContainer: {
         justifyContent: 'center',
         alignItems: 'center',
-        paddingTop: 6,
-        marginTop: 16
+        marginTop: 2
     }
 })

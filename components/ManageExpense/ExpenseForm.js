@@ -3,30 +3,39 @@ import Input from "./Input";
 import { useState } from "react";
 import Button from "../UI/Button";
 import {getFormattedDate }from "../../util/Date";
+import { GlobalStyles } from "../../constants/styles";
 
 function ExpenseForm({submitButtonLabel, onCancel, onSubmit, defaultValues}){
 
-    const [inputValues, setInputValues] = useState({
-        // default values will be undefined if we are in add Mode, so we do this.
-        amount: defaultValues ? defaultValues.amount.toString() : '',
-        date: defaultValues ? getFormattedDate(defaultValues.date) : '',
-        description: defaultValues ? defaultValues.description : '',
+    const [inputs, setInputs] = useState({
+        amount: {   
+            value: defaultValues ? defaultValues.amount.toString() : '',
+            isValid: true
+        },
+        date: {
+            value: defaultValues ? getFormattedDate(defaultValues.date) : '',
+            isValid: true
+        },
+        description: { 
+            value: defaultValues ? defaultValues.description : '',
+            isValid: true
+        },
     });
 
     function inputChangeHandler(inputIdentifier, enteredValue) {
-        setInputValues((curInputValues) => {
+        setInputs((curInputs) => {
             return {
-                ...curInputValues,
-                [inputIdentifier]: enteredValue
+                ...curInputs,
+                [inputIdentifier]: { value: enteredValue, isValid: true } 
             }
         })
     }
 
     function submitHandler(){
         const expenseData = {
-            amount: +inputValues.amount,
-            date: new Date(inputValues.date),
-            description: inputValues.description
+            amount: +inputs.amount.value,
+            date: new Date(inputs.date.value),
+            description: inputs.description.value
         };
 
         // Check if it is not a number & if the amount is greater than 0
@@ -35,46 +44,68 @@ function ExpenseForm({submitButtonLabel, onCancel, onSubmit, defaultValues}){
         const descriptionIsValid = expenseData.description.trim().length > 0;
 
         if (!amountIsValid || !dateIsValid || !descriptionIsValid){
-            Alert.alert('Invalid input', 'Please check your input values');
+            //Alert.alert('Invalid input', 'Please check your input values');
+            setInputs((curInputs) => {
+                return {
+                    amount: {value: curInputs.amount.value, isValid: amountIsValid},
+                    date: {value: curInputs.date.value, isValid: dateIsValid},
+                    description: {value: curInputs.description.value, isValid: descriptionIsValid}
+                }
+            })
             return;
         }
 
         onSubmit(expenseData);
     }
 
+    const formIsInvalid = 
+        !inputs.amount.isValid ||
+        !inputs.date.isValid ||
+        !inputs.description.isValid;
+
     return (
         <View style={styles.form}>
             <Text style={styles.title} >Your Expense</Text>
             <View style={styles.inputsRow}>
-            <Input  
-                label="Amount" 
-                style={styles.rowInput}
-                textInputConfig={{
-                    keyBoardType: 'decimal-pad',
-                    // This allowa us to point at a function that should be exicuted whenever a user enters a value.
-                    onChangeText: inputChangeHandler.bind(this, 'amount'),
-                    value: inputValues.amount
-            }}/>
-            <Input 
-                label="Date" 
-                style={styles.rowInput}
-                textInputConfig={{
-                    placeholder: 'YYYY-MM-DD',
-                    maxLength: 10,
-                    onChangeText: inputChangeHandler.bind(this, 'date'),
-                    value: inputValues.date
-            }}/>
+                <Input  
+                    label="Amount" 
+                    style={styles.rowInput}
+                    // This is true if the amount is not valid
+                    invalid={!inputs.amount.isValid}
+                    textInputConfig={{
+                        keyBoardType: 'decimal-pad',
+                        // This allowa us to point at a function that should be exicuted whenever a user enters a value.
+                        onChangeText: inputChangeHandler.bind(this, 'amount'),
+                        value: inputs.amount.value
+                }}/>
+                <Input 
+                    label="Date" 
+                    style={styles.rowInput}
+                    invalid={!inputs.date.isValid}
+                    textInputConfig={{
+                        placeholder: 'YYYY-MM-DD',
+                        maxLength: 10,
+                        onChangeText: inputChangeHandler.bind(this, 'date'),
+                        value: inputs.date.value
+                }}/>
             </View>
-            <Input label="Description" textInputConfig={{
-                multiline: true,
-                onChangeText: inputChangeHandler.bind(this, 'description'),
-                value: inputValues.description
-            }}/>
+            <Input 
+                label="Description" 
+                invalid={!inputs.description.isValid}
+                textInputConfig={{
+                    multiline: true,
+                    onChangeText: inputChangeHandler.bind(this, 'description'),
+                    value: inputs.description.value
+                }}
+            />
+            { formIsInvalid && (
+                <Text style={styles.errorText}>Invalid input values - please check your entered data</Text>
+            )}
             <View style={styles.buttons}>
-                <Button onPress={onCancel} mode='flat'>
+                <Button style={styles.button} onPress={onCancel} mode='flat'>
                     Cancel
                 </Button>
-                <Button onPress={submitHandler}>
+                <Button style={styles.button} onPress={submitHandler}>
                     {submitButtonLabel}
                 </Button>
             </View>
@@ -95,7 +126,13 @@ const styles = StyleSheet.create({
         flex: 1
     },
     form: {
+        padding: 16,
         marginTop: 40
+    },
+    errorText: {
+        textAlign: 'center',
+        color: GlobalStyles.colors.error500,
+        margin: 8
     },
     title: {
         fontSize: 24,
@@ -106,8 +143,14 @@ const styles = StyleSheet.create({
     },
     buttons: {
         marginTop: 6,
+        borderBottomColor: GlobalStyles.colors.primary50,
+        borderBottomWidth: 2,
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
+        marginHorizontal: 20
+    },
+    button: {
+        marginBottom: 12
     }
 })
